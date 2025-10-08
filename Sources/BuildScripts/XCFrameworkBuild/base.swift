@@ -594,29 +594,22 @@ class BaseBuild {
                 frameworks.append(libName)
             }
         }
-        for framework in frameworks {
-            // clean old files
-            try Utility.launch(path: "/bin/rm", arguments: ["-rf", "\(framework)*.xcframework.zip"], currentDirectoryURL: releaseDirPath)
-            try Utility.launch(path: "/bin/rm", arguments: ["-rf", "\(framework)*.checksum.txt"], currentDirectoryURL: releaseDirPath)
 
-            let XCFrameworkFile =  framework + ".xcframework"
-            let zipFile = releaseDirPath + [framework + ".xcframework.zip"]
-            let checksumFile = releaseDirPath + [framework + ".xcframework.checksum.txt"]
-            try Utility.launch(path: "/usr/bin/zip", arguments: ["-qr", zipFile.path, XCFrameworkFile], currentDirectoryURL: self.xcframeworkDirectoryURL)
-            Utility.shell("swift package compute-checksum \(zipFile.path) > \(checksumFile.path)")
+        let XCFrameworkFiles = frameworks.map { $0 + ".xcframework" }
+        let outputFileName = library.rawValue + "-xcframeworks"
+        let zipFile = releaseDirPath + [outputFileName + ".zip"]
+        let checksumFile = releaseDirPath + [outputFileName + ".checksum.txt"]
+        try Utility.launch(path: "/usr/bin/zip", arguments: ["-qr", zipFile.path] + XCFrameworkFiles, currentDirectoryURL: self.xcframeworkDirectoryURL)
+        Utility.shell("swift package compute-checksum \(zipFile.path) > \(checksumFile.path)")
 
-            if BaseBuild.options.enableSplitPlatform {
-                for group in BaseBuild.splitPlatformGroups.keys {
-                    let XCFrameworkName =  "\(framework)-\(group)"
-                    let XCFrameworkFile =  XCFrameworkName + ".xcframework"
-                    let XCFrameworkPath = self.xcframeworkDirectoryURL + ["\(framework)-\(group).xcframework"]
-                    if FileManager.default.fileExists(atPath: XCFrameworkPath.path) {
-                        let zipFile = releaseDirPath + [XCFrameworkName + ".xcframework.zip"]
-                        let checksumFile = releaseDirPath + [XCFrameworkName + ".xcframework.checksum.txt"]
-                        try Utility.launch(path: "/usr/bin/zip", arguments: ["-qr", zipFile.path, XCFrameworkFile], currentDirectoryURL: self.xcframeworkDirectoryURL)
-                        Utility.shell("swift package compute-checksum \(zipFile.path) > \(checksumFile.path)")
-                    }
-                }
+        if BaseBuild.options.enableSplitPlatform {
+            for group in BaseBuild.splitPlatformGroups.keys {
+                let XCFrameworkFiles = frameworks.map { "\($0)-\(group).xcframework" }
+                let outputFileName = "\(library.rawValue)-xcframeworks-\(group)"
+                let zipFile = releaseDirPath + [outputFileName + ".zip"]
+                let checksumFile = releaseDirPath + [outputFileName + ".checksum.txt"]
+                try Utility.launch(path: "/usr/bin/zip", arguments: ["-qr", zipFile.path] + XCFrameworkFiles, currentDirectoryURL: self.xcframeworkDirectoryURL)
+                Utility.shell("swift package compute-checksum \(zipFile.path) > \(checksumFile.path)")
             }
         }
     }
