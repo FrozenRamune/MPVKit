@@ -19,7 +19,7 @@ let package = Package(
         .target(
             name: "_MPVKit",
             dependencies: [
-                "Libmpv", "_FFmpeg", "Libuchardet", "Libbluray",
+                "Libmpv", "_FFmpeg", "Libuchardet",
                 .target(name: "Libluajit", condition: .when(platforms: [.macOS])),
             ],
             path: "Sources/_MPVKit",
@@ -56,7 +56,7 @@ let package = Package(
         .target(
             name: "_MPVKit-GPL",
             dependencies: [
-                "Libmpv-GPL", "_FFmpeg-GPL", "Libuchardet", "Libbluray",
+                "Libmpv-GPL", "_FFmpeg-GPL", "Libuchardet",
                 .target(name: "Libluajit", condition: .when(platforms: [.macOS])),
             ],
             path: "Sources/_MPVKit-GPL",

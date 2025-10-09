@@ -19,9 +19,6 @@ do {
 
     // libsmbclient
     try BuildSmbclient().buildALL()
-
-    // libbluray
-    try BuildBluray().buildALL()
     
     // ffmpeg
     try BuildUavs3d().buildALL()
@@ -44,7 +41,7 @@ do {
 
 
 enum Library: String, CaseIterable {
-    case libmpv, FFmpeg, libshaderc, vulkan, lcms2, libdovi, openssl, libunibreak, libfreetype, libfribidi, libharfbuzz, libass, libsmbclient, libplacebo, libdav1d, gmp, nettle, gnutls, libuchardet, libbluray, libluajit, libuavs3d
+    case libmpv, FFmpeg, libshaderc, vulkan, lcms2, libdovi, openssl, libunibreak, libfreetype, libfribidi, libharfbuzz, libass, libsmbclient, libplacebo, libdav1d, gmp, nettle, gnutls, libuchardet, libluajit, libuavs3d
     var version: String {
         switch self {
         case .libmpv:
@@ -85,8 +82,6 @@ enum Library: String, CaseIterable {
             return "2024.2.0"
         case .libuchardet:
             return "0.0.8"
-        case .libbluray:
-            return "1.3.4"
         case .libluajit:
             return "2.1.0"
         case .libuavs3d:
@@ -134,8 +129,6 @@ enum Library: String, CaseIterable {
             return "https://github.com/mpvkit/libshaderc-build/releases/download/\(self.version)/libshaderc-all.zip"
         case .libuchardet:
             return "https://github.com/mpvkit/libuchardet-build/releases/download/\(self.version)/libuchardet-all.zip"
-        case .libbluray:
-            return "https://github.com/mpvkit/libbluray-build/releases/download/\(self.version)/libbluray-all.zip"
         case .libluajit:
             return "https://github.com/mpvkit/libluajit-build/releases/download/\(self.version)/libluajit-all.zip"
         case .libuavs3d:
@@ -338,14 +331,6 @@ enum Library: String, CaseIterable {
                     checksum: "https://github.com/mpvkit/libuchardet-build/releases/download/\(self.version)/Libuchardet.xcframework.checksum.txt"
                 ),
             ]
-        case .libbluray:
-            return [
-                .target(
-                    name: "Libbluray",
-                    url: "https://github.com/mpvkit/libbluray-build/releases/download/\(self.version)/Libbluray.xcframework.zip",
-                    checksum: "https://github.com/mpvkit/libbluray-build/releases/download/\(self.version)/Libbluray.xcframework.checksum.txt"
-                ),
-            ]
         case .libluajit:
             return  [
                 .target(
@@ -384,8 +369,9 @@ private class BuildMPV: BaseBuild {
     override func arguments(platform: PlatformType, arch: ArchType) -> [String] {
         var array = [
             "-Dlibmpv=true",
-            "-Dgl=enabled",
-            "-Dplain-gl=enabled",
+            "-Dcplayer=false",
+            "-Dgl=disabled",
+            "-Dplain-gl=disabled",
             "-Diconv=enabled",
             "-Duchardet=enabled",
             "-Dvulkan=enabled",
@@ -396,17 +382,16 @@ private class BuildMPV: BaseBuild {
             "-Djpeg=disabled",
             "-Dvapoursynth=disabled",
             "-Drubberband=disabled",
+            "-Dlibbluray=disabled",
+
+            "-Dgl-cocoa=disabled",
+            "-Dvideotoolbox-gl=disabled",
+            "-Dios-gl=disabled",
         ]
         if BaseBuild.options.enableGPL {
             array.append("-Dgpl=true")
         } else {
             array.append("-Dgpl=false")
-        }
-        let blurayLibPath = URL.currentDirectory + [Library.libbluray.rawValue, platform.rawValue, "thin", arch.rawValue]
-        if FileManager.default.fileExists(atPath: blurayLibPath.path) {
-            array.append("-Dlibbluray=enabled")
-        } else {
-            array.append("-Dlibbluray=disabled")
         }
         if !(platform == .macos && arch.executable) {
             array.append("-Dcplayer=false")
@@ -416,11 +401,8 @@ private class BuildMPV: BaseBuild {
             array.append("-Dcocoa=enabled")
             array.append("-Dcoreaudio=enabled")
             array.append("-Davfoundation=enabled")
-            array.append("-Dgl-cocoa=enabled")
-            array.append("-Dvideotoolbox-gl=enabled")
             array.append("-Dlua=luajit")  // macos show video stats need enable 
         } else {
-            array.append("-Dvideotoolbox-gl=disabled")
             array.append("-Dswift-build=disabled")
             array.append("-Daudiounit=enabled")
             array.append("-Davfoundation=disabled")
@@ -428,10 +410,6 @@ private class BuildMPV: BaseBuild {
             if platform == .maccatalyst {
                 array.append("-Dcocoa=disabled")
                 array.append("-Dcoreaudio=disabled")
-            } else if platform == .xros || platform == .xrsimulator {
-                array.append("-Dios-gl=disabled")
-            } else {
-                array.append("-Dios-gl=enabled")
             }
         }
         return array
@@ -644,7 +622,7 @@ private class BuildFFMPEG: BaseBuild {
         // Configuration options:
         "--disable-armv5te", "--disable-armv6", "--disable-armv6t2",
         "--disable-bzlib", "--disable-gray", "--disable-iconv", "--disable-linux-perf",
-        "--disable-shared", "--disable-small", "--disable-symver", "--disable-xlib",
+        "--disable-shared", "--enable-small", "--disable-symver", "--disable-xlib",
         "--enable-cross-compile", "--enable-libxml2", "--enable-nonfree",
         "--enable-optimizations", "--enable-pic", "--enable-runtime-cpudetect", "--enable-static", "--enable-thumb", "--enable-version3",
         "--pkg-config-flags=--static",
@@ -750,15 +728,6 @@ private class BuildFFMPEG: BaseBuild {
         "--enable-filter=vflip_vulkan", "--enable-filter=xfade_vulkan",
     ]
 
-}
-
-
-
-
-private class BuildBluray: ZipBaseBuild {
-    init() {
-        super.init(library: .libbluray)
-    }
 }
 
 private class BuildUchardet: ZipBaseBuild {
